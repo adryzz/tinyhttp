@@ -1,0 +1,43 @@
+[package]
+name = "tinyhttp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+defmt = { version = "0.3.8", optional = true, features = ["ip_in_core"] }
+#form_urlencoded = { version = "1.2.1", default-features = false }
+heapless = "0.8.0"
+managed = { version = "0.8", default-features = false, features = ["map"] }
+mr-mime = { version = "0.1.1", default-features = false }
+
+serde = { version = "1.0.215", features = ["derive"], optional = true, default-features = false }
+embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.5.0", features = ["medium-ip", "tcp"] }
+
+unicase = "2.8.0"
+#url = { version = "2.5.4", default-features = false }
+
+[dev-dependencies]
+static_cell = "2.1.0"
+rand_core = { version = "0.6.4", features = ["std"] }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", version = "0.6.3", features = ["nightly", "arch-std", "executor-thread", "log", "integrated-timers"] }
+embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.5.0", features = ["dhcpv4", "dns", "log", "medium-ethernet", "medium-ip", "proto-ipv4", "proto-ipv6", "raw", "std", "tcp"] }
+embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0.3.2", features = ["log", "std", ] }
+log = "0.4.22"
+clap = { version = "4.5.21", features = ["derive"] }
+embassy-net-tuntap = { git = "https://github.com/embassy-rs/embassy.git" }
+embedded-io-async = { version = "0.6.1", features = ["std"] }
+env_logger = "0.11.5"
+
+[features]
+default = ["ipv4", "ipv6", "legacy", "default_error_pages"]
+
+# Adds support for HTTP/1.0
+legacy = []
+
+# Adds default error pages
+default_error_pages = []
+
+defmt = ["dep:defmt", "heapless/defmt-03"]
+ipv4 = ["embassy-net/proto-ipv4"]
+ipv6 = ["embassy-net/proto-ipv6"]
+serde = ["dep:serde"]#, "url/serde"
