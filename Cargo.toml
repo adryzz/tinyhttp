@@ -12,6 +12,8 @@ mr-mime = { version = "0.1.1", default-features = false }
 
 serde = { version = "1.0.215", features = ["derive"], optional = true, default-features = false }
 embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.5.0", features = ["medium-ip", "tcp"] }
+embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0.3.2" }
+
 
 unicase = "2.8.0"
 #url = { version = "2.5.4", default-features = false }
