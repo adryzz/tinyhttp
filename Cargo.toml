@@ -16,6 +16,7 @@ embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0
 
 
 unicase = "2.8.0"
+numtoa = "0.2.4"
 #url = { version = "2.5.4", default-features = false }
 
 [dev-dependencies]

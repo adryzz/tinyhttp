@@ -1,11 +1,13 @@
 #![no_std]
 
-use config::HttpConfig;
+use config::{HttpConfig, StaticPage};
 use embassy_net::tcp::TcpSocket;
 use managed::ManagedMap;
 mod config;
 mod headers;
 mod status;
+mod utils;
+mod writer;
 use headers::RequestHeader;
 
 #[cfg(not(any(feature = "ipv4", feature = "ipv6")))]
@@ -60,13 +62,15 @@ pub struct HttpRequest<'a> {
 pub struct HttpServer<'a, const TX: usize, const RX: usize> {
     network_stack: embassy_net::Stack<'a>,
     config: &'a HttpConfig<'a>,
-
 }
 
 impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
     pub fn new(network_stack: embassy_net::Stack<'static>, config: &'a HttpConfig) -> Self {
         // TODO: add router
-        Self { network_stack, config }
+        Self {
+            network_stack,
+            config,
+        }
     }
 
     pub async fn run(&mut self) {
@@ -77,10 +81,11 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
             let mut socket = TcpSocket::new(self.network_stack, &mut rx_buf, &mut tx_buf);
 
             // set the timeout to the configured value, or if none, set it to the default, and then handle closing the socket separately
-            socket.set_timeout(Some(embassy_time::Duration::from_secs(self.config.keepalive.unwrap_or(5) as u64)));
+            socket.set_timeout(Some(embassy_time::Duration::from_secs(
+                self.config.keepalive.unwrap_or(5) as u64,
+            )));
 
             if let Err(_) = socket.accept(self.config.port).await {
-                
                 #[cfg(feature = "defmt")]
                 defmt::debug!("Error while accepting socket");
 

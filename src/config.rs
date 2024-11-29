@@ -17,7 +17,7 @@ pub struct HttpConfig<'a> {
     pub keepalive: Option<u16>,
 
     /// Username/Password combo for global basic authentication.
-    /// 
+    ///
     /// Default: None
     pub basic_auth: Option<(&'a str, &'a str)>,
 
@@ -74,28 +74,28 @@ impl Default for HttpConfig<'static> {
 /// Currently only supports uncompressed pages.
 #[derive(Debug, Clone, Copy)]
 pub struct StaticPage<'a> {
-    content_type: &'a str,
-    body: &'a str,
+    pub(crate) content_type: &'a str,
+    pub(crate) body: &'a str,
 }
 
 impl<'a> StaticPage<'a> {
     pub const fn html(body: &'a str) -> Self {
         StaticPage {
-            content_type: "text/html",
+            content_type: "text/html; charset=UTF-8",
             body,
         }
     }
 
     pub const fn text(body: &'a str) -> Self {
         StaticPage {
-            content_type: "text/plain",
+            content_type: "text/plain; charset=UTF-8",
             body,
         }
     }
 
     pub const fn json(body: &'a str) -> Self {
         StaticPage {
-            content_type: "text/json",
+            content_type: "text/json; charset=UTF-8",
             body,
         }
     }
