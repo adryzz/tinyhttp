@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use embassy_net::tcp::TcpSocket;
 
-use crate::{config::StaticPage, status::StatusCode, utils, HttpVersion};
+use crate::{config::StaticPage, error::Error, status::StatusCode, utils, HttpVersion};
 
 /// Used to write HTTP responses.
 /// 
@@ -32,7 +32,7 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         HttpWriter { socket, version, marker: PhantomData }
     }
 
-    pub async fn start(mut self, code: StatusCode) -> Result<HttpWriter<'a, 'b, Headers>, embassy_net::tcp::Error> {
+    pub async fn start(mut self, code: StatusCode) -> Result<HttpWriter<'a, 'b, Headers>, Error> {
         match self.version {
             HttpVersion::Http10 => self.write_bytes(b"HTTP/1.0 ").await?,
             HttpVersion::Http11 => self.write_bytes(b"HTTP/1.1 ").await?,
@@ -43,13 +43,13 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         Ok(HttpWriter { socket: self.socket, version: self.version, marker: PhantomData })
     }
 
-    pub async fn static_page(self, page: StaticPage<'a>, code: StatusCode) -> Result<HttpResponse, embassy_net::tcp::Error> {
+    pub async fn static_page(self, page: StaticPage<'a>, code: StatusCode) -> Result<HttpResponse, Error> {
         self.start(code).await?.body_static_page(page).await
     }
 }
 
 impl<'a, 'b, T> HttpWriter<'a, 'b, T> where T : HttpStage {
-    async fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), embassy_net::tcp::Error> {
+    async fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), Error> {
         #[cfg(feature = "defmt")]
         if bytes.len() > self.socket.send_capacity() {
             defmt::trace!("Write bigger than buffer size!");
@@ -68,7 +68,7 @@ impl<'a, 'b, T> HttpWriter<'a, 'b, T> where T : HttpStage {
 }
 
 impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
-    pub async fn header(mut self, name: &str, value: &str) -> Result<Self, embassy_net::tcp::Error> {
+    pub async fn header(mut self, name: &str, value: &str) -> Result<Self, Error> {
         self.write_bytes(name.as_bytes()).await?;
         self.write_bytes(b": ").await?;
         self.write_bytes(value.as_bytes()).await?;
@@ -77,15 +77,15 @@ impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
         Ok(self)
     }
 
-    pub async fn body_str(self, body: &str, content_type: &str) -> Result<HttpResponse, embassy_net::tcp::Error> {
+    pub async fn body_str(self, body: &str, content_type: &str) -> Result<HttpResponse, Error> {
         self.body_bytes(body.as_bytes(), content_type).await
     }
 
-    pub async fn body_static_page(self, page: StaticPage<'a>) -> Result<HttpResponse, embassy_net::tcp::Error> {
+    pub async fn body_static_page(self, page: StaticPage<'a>) -> Result<HttpResponse, Error> {
         self.body_str(&page.body, &page.content_type).await
     }
 
-    pub async fn body_bytes(mut self, body: &[u8], content_type: &str) -> Result<HttpResponse, embassy_net::tcp::Error> {
+    pub async fn body_bytes(mut self, body: &[u8], content_type: &str) -> Result<HttpResponse, Error> {
         let mut buf = utils::USizeStrBuf::new();
         self = self.header("Content-Type", content_type).await?
         .header("Content-Length", buf.stringify(body.len())).await?;

@@ -2,13 +2,16 @@
 
 use config::{HttpConfig, StaticPage};
 use embassy_net::tcp::TcpSocket;
+use error::Error;
 use managed::ManagedMap;
 mod config;
 mod headers;
 mod status;
 mod utils;
 mod writer;
+pub mod error;
 use headers::RequestHeader;
+use writer::HttpResponse;
 
 #[cfg(not(any(feature = "ipv4", feature = "ipv6")))]
 compile_error!("You must select at least one of the following features: 'ipv4', 'ipv6'");
