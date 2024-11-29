@@ -14,24 +14,24 @@ use config::HttpConfig;
 use embassy_net::tcp::TcpSocket;
 use error::Error;
 use reader::HttpReader;
-use routing::Router;
+use routing::{Router, StaticDispatchRouter};
 use status::StatusCode;
 use writer::ResponseWriter;
 
 #[cfg(not(any(feature = "ipv4", feature = "ipv6")))]
 compile_error!("You must select at least one of the following features: 'ipv4', 'ipv6'");
 
-pub struct HttpServer<'a, const TX: usize, const RX: usize, const ROUTES: usize> {
+pub struct HttpServer<'a, T, const TX: usize, const RX: usize, const ROUTES: usize> where T : StaticDispatchRouter<'a, 'a, 'a> {
     network_stack: embassy_net::Stack<'a>,
     config: &'a HttpConfig<'a>,
-    router: &'a Router<ROUTES>,
+    router: &'a Router<'a, T, ROUTES>,
 }
 
-impl<'a, const TX: usize, const RX: usize, const ROUTES: usize> HttpServer<'a, TX, RX, ROUTES> {
+impl<'a, T, const TX: usize, const RX: usize, const ROUTES: usize> HttpServer<'a, T, TX, RX, ROUTES> where T : StaticDispatchRouter<'a, 'a, 'a> {
     pub fn new(
         network_stack: embassy_net::Stack<'static>,
         config: &'a HttpConfig,
-        router: &'a Router<ROUTES>,
+        router: &'a Router<'a, T, ROUTES>,
     ) -> Self {
         // TODO: add router
         Self {

@@ -13,7 +13,10 @@ use log::*;
 use rand_core::{OsRng, RngCore};
 use static_cell::StaticCell;
 use tinyhttp::config::HttpConfig;
+use tinyhttp::error::Error;
+use tinyhttp::reader::RequestReader;
 use tinyhttp::status::StatusCode;
+use tinyhttp::writer::{HttpResponse, ResponseWriter};
 use tinyhttp::{router, HttpServer};
 
 #[derive(Parser)]
@@ -81,7 +84,7 @@ async fn http_task(stack: embassy_net::Stack<'static>) {
     let router = router! {
         "/" => send_204,
     };
-    HttpServer::<1024, 1024, 1>::new(stack, &config, &router)
+    HttpServer::<_, 1024, 1024, 1>::new(stack, &config, &router)
         .run()
         .await
 }
