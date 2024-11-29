@@ -12,6 +12,9 @@ use heapless::Vec;
 use log::*;
 use rand_core::{OsRng, RngCore};
 use static_cell::StaticCell;
+use tinyhttp::config::HttpConfig;
+use tinyhttp::status::StatusCode;
+use tinyhttp::{router, HttpServer};
 
 #[derive(Parser)]
 #[clap(version = "1.0")]
@@ -74,37 +77,26 @@ async fn main_task(spawner: Spawner) {
 #[embassy_executor::task(pool_size = 8)]
 async fn http_task(stack: embassy_net::Stack<'static>) {
     // Then we can use it!
-    let mut rx_buffer = [0; 1024];
-    let mut tx_buffer = [0; 1024];
-
-    loop {
-        let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-        socket.set_timeout(Some(Duration::from_secs(10)));
-        info!("Listening on TCP:80...");
-        if let Err(_) = socket.accept(80).await {
-            warn!("accept error");
-            continue;
-        }
-        info!("Accepted a connection");
-
-        // Write some quick output
-        let mut w = StrWrite::default();
-        let body = "<html><head><title>title</title></head><body><h1>hello</h1></body></html>";
-        write!(w, "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Length: {}\r\n\r\n{}", body.len(), body).unwrap();
-        let r = socket.write_all(&w.0).await;
-        if let Err(e) = r {
-            warn!("write error: {:?}", e);
-            return;
-        }
-
-        _ = socket.flush().await;
-        info!("Closing the connection");
-        socket.close();
-        info!("Flushing the RST out...");
-        _ = socket.flush().await;
-        info!("Finished with the socket");
-    }
+    let config = HttpConfig::default();
+    let router = router! {
+        "/" => send_204,
+    };
+    HttpServer::<1024, 1024, 1>::new(stack, &config, &router)
+        .run()
+        .await
 }
+
+async fn send_204<'a, 'b, 'c>(
+    _reader: RequestReader<'a, 'b, 'c>,
+    writer: ResponseWriter<'a, 'b>,
+) -> Result<HttpResponse, Error> {
+    writer
+        .start(StatusCode::NO_CONTENT)
+        .await?
+        .body_empty()
+        .await
+}
+
 
 static EXECUTOR: StaticCell<Executor> = StaticCell::new();
 

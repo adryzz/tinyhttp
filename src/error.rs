@@ -3,7 +3,9 @@ pub enum Error {
     Tcp(embassy_net::tcp::Error),
     /// HTTP range request out of range. HTTP 416 Range Not Satisfiable
     OutOfRange,
-    
+
+    /// The TCP socket ran out of data and the remote peer closed it.
+    EOF,
 }
 
 impl From<embassy_net::tcp::Error> for Error {

@@ -45,5 +45,16 @@ pub struct HttpRequest<'a> {
     version: HttpVersion,
     method: HttpMethod,
     path: &'a str,
+    body_len: Option<usize>,
     headers: ManagedMap<'a, RequestHeader<'a>, &'a str>,
+}
+
+impl<'a> HttpRequest<'a> {
+    pub fn body_len(&self) -> Option<usize> {
+        self.body_len
+    }
+
+    pub fn version(&self) -> HttpVersion {
+        self.version
+    }
 }
