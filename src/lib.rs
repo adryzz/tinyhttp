@@ -65,7 +65,7 @@ impl<'a, T, const TX: usize, const RX: usize, const ROUTES: usize> HttpServer<'a
                 // wait for HTTP request
                 let reader = match HttpReader::try_new(&mut reader).await {
                     Ok(r) => r,
-                    Err(Error::Tcp(e)) => {
+                    Err(Error::Tcp(_)) => {
                         #[cfg(feature = "defmt")]
                         defmt::debug!("TCP error while parsing HTTP request.");
 
@@ -102,7 +102,7 @@ impl<'a, T, const TX: usize, const RX: usize, const ROUTES: usize> HttpServer<'a
                     Ok(_) => {
                         // TODO: handle connection keepalive if enabled
                     }
-                    Err(Error::Tcp(e)) => {
+                    Err(Error::Tcp(_)) => {
                         #[cfg(feature = "defmt")]
                         defmt::debug!("TCP error while sending HTTP response.");
 

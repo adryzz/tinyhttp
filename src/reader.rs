@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use embassy_net::tcp::TcpReader;
 
 use crate::{error::Error, request::HttpRequest};
@@ -13,7 +11,7 @@ pub struct HttpReader<'a, 'b, 'c> {
 }
 
 impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
-    pub(crate) async fn try_new(socket: &'a mut TcpReader<'b>) -> Result<Self, Error> {
+    pub(crate) async fn try_new(_socket: &'a mut TcpReader<'b>) -> Result<Self, Error> {
         todo!()
     }
 

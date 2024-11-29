@@ -1,16 +1,11 @@
 #![feature(impl_trait_in_assoc_type)]
 #![feature(generic_arg_infer)]
-use core::fmt::Write as _;
 
 use clap::Parser;
 use embassy_executor::{Executor, Spawner};
-use embassy_net::tcp::TcpSocket;
 use embassy_net::{Config, Ipv4Address, Ipv4Cidr, StackResources};
 use embassy_net_tuntap::TunTapDevice;
-use embassy_time::{Duration, Timer};
-use embedded_io_async::Write as _;
 use heapless::Vec;
-use log::*;
 use rand_core::{OsRng, RngCore};
 use static_cell::StaticCell;
 use tinyhttp::config::HttpConfig;
@@ -34,16 +29,6 @@ struct Opts {
 #[embassy_executor::task]
 async fn net_task(mut runner: embassy_net::Runner<'static, TunTapDevice>) -> ! {
     runner.run().await
-}
-
-#[derive(Default)]
-struct StrWrite(pub heapless::Vec<u8, 256>);
-
-impl core::fmt::Write for StrWrite {
-    fn write_str(&mut self, s: &str) -> Result<(), core::fmt::Error> {
-        self.0.extend_from_slice(s.as_bytes()).unwrap();
-        Ok(())
-    }
 }
 
 #[embassy_executor::task]

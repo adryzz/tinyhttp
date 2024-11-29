@@ -17,14 +17,16 @@ impl<'a, T, const ROUTES: usize> Router<'a, T, ROUTES> where T : StaticDispatchR
     /// Checks if the request can be handled by any of the request handlers, and if so, returns it.
     ///
     /// Returns None when no request handler can handle the request (HTTP 404)
-    pub fn handler(&self, request: &HttpRequest) -> Option<RequestHandler> {
+    pub fn handler(&self, _request: &HttpRequest) -> Option<RequestHandler> {
         // TODO: write router matching
         None
     }
 }
 
+/// Automatically derived trait when using the router! macro.
+/// Workaround for async function pointers using static dispatch
 pub trait StaticDispatchRouter<'a, 'b, 'c> {
-    async fn run(&self, reader: RequestReader<'a, 'b, 'c>, writer: ResponseWriter<'a, 'b>) -> Result<HttpResponse, Error>;
+    fn run(&self, reader: RequestReader<'a, 'b, 'c>, writer: ResponseWriter<'a, 'b>) -> impl core::future::Future<Output = Result<HttpResponse, Error>>;
 }
 
 #[macro_export]

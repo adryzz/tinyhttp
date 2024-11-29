@@ -84,7 +84,7 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
 }
 
 impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
-    pub async fn header(mut self, name: &str, value: &str) -> Result<Self, Error> {
+    pub async fn header(self, name: &str, value: &str) -> Result<Self, Error> {
         write_bytes(self.socket, name.as_bytes()).await?;
         write_bytes(self.socket, b": ").await?;
         write_bytes(self.socket, value.as_bytes()).await?;
