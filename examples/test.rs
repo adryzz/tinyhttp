@@ -1,4 +1,5 @@
 #![feature(impl_trait_in_assoc_type)]
+#![feature(generic_arg_infer)]
 use core::fmt::Write as _;
 
 use clap::Parser;
@@ -84,7 +85,7 @@ async fn http_task(stack: embassy_net::Stack<'static>) {
     let router = router! {
         "/" => send_204,
     };
-    HttpServer::<_, 1024, 1024, 1>::new(stack, &config, &router)
+    HttpServer::<_, 1024, 1024, _>::new(stack, &config, &router)
         .run()
         .await
 }
