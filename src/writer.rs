@@ -4,10 +4,20 @@ use embassy_net::tcp::TcpSocket;
 
 use crate::{config::StaticPage, status::StatusCode, utils, HttpVersion};
 
+/// Used to write HTTP responses.
+/// 
+/// Uses typestate to make it impossible to misuse.
 pub struct HttpWriter<'a, 'b, T> where T :  {
     socket: &'a mut TcpSocket<'b>,
     version: HttpVersion,
     marker: PhantomData<T>
+}
+
+/// Http response
+/// 
+/// Internally, it's just a marker to make sure that every HTTP handler function has a response.
+pub struct HttpResponse {
+    _marker: ()
 }
 
 pub enum Start {}
@@ -18,8 +28,8 @@ impl HttpStage for Start {}
 impl HttpStage for Headers {}
 
 impl<'a, 'b> HttpWriter<'a, 'b, Start> {
-    pub(crate) fn new(socket: &'a mut TcpSocket<'b>) -> HttpWriter<'a, 'b, Start> {
-        HttpWriter { socket, version: HttpVersion::Http11, marker: PhantomData }
+    pub(crate) fn new(socket: &'a mut TcpSocket<'b>, version: HttpVersion) -> HttpWriter<'a, 'b, Start> {
+        HttpWriter { socket, version, marker: PhantomData }
     }
 
     pub async fn start(mut self, code: StatusCode) -> Result<HttpWriter<'a, 'b, Headers>, embassy_net::tcp::Error> {
@@ -33,7 +43,7 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         Ok(HttpWriter { socket: self.socket, version: self.version, marker: PhantomData })
     }
 
-    pub async fn static_page(self, page: StaticPage<'a>, code: StatusCode) -> Result<(), embassy_net::tcp::Error> {
+    pub async fn static_page(self, page: StaticPage<'a>, code: StatusCode) -> Result<HttpResponse, embassy_net::tcp::Error> {
         self.start(code).await?.body_static_page(page).await
     }
 }
@@ -54,6 +64,7 @@ impl<'a, 'b, T> HttpWriter<'a, 'b, T> where T : HttpStage {
         Ok(())
     }
     // TODO: streamed writing
+    // TODO: buffered writing
 }
 
 impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
@@ -66,15 +77,15 @@ impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
         Ok(self)
     }
 
-    pub async fn body_str(self, body: &str, content_type: &str) -> Result<(), embassy_net::tcp::Error> {
+    pub async fn body_str(self, body: &str, content_type: &str) -> Result<HttpResponse, embassy_net::tcp::Error> {
         self.body_bytes(body.as_bytes(), content_type).await
     }
 
-    pub async fn body_static_page(self, page: StaticPage<'a>) -> Result<(), embassy_net::tcp::Error> {
+    pub async fn body_static_page(self, page: StaticPage<'a>) -> Result<HttpResponse, embassy_net::tcp::Error> {
         self.body_str(&page.body, &page.content_type).await
     }
 
-    pub async fn body_bytes(mut self, body: &[u8], content_type: &str) -> Result<(), embassy_net::tcp::Error> {
+    pub async fn body_bytes(mut self, body: &[u8], content_type: &str) -> Result<HttpResponse, embassy_net::tcp::Error> {
         let mut buf = utils::USizeStrBuf::new();
         self = self.header("Content-Type", content_type).await?
         .header("Content-Length", buf.stringify(body.len())).await?;
@@ -83,6 +94,6 @@ impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
         self.write_bytes(b"\r\n").await?;
         self.write_bytes(body).await?;
 
-        Ok(())
+        Ok(HttpResponse { _marker: () })
     }
 }
