@@ -67,10 +67,11 @@ async fn main_task(spawner: Spawner) {
 async fn http_task(stack: embassy_net::Stack<'static>) {
     // Then we can use it!
     let config = HttpConfig::default();
-    let router = router! {
-        "/" => send_204,
-    };
-    HttpServer::<_, 1024, 1024, _>::new(stack, &config, &router)
+
+    HttpServer::<1024, 1024>::new(stack, &config)
+        .route(router! {
+            "/" => send_204,
+        })
         .run()
         .await
 }
@@ -85,7 +86,6 @@ async fn send_204<'a, 'b, 'c>(
         .body_empty()
         .await
 }
-
 
 static EXECUTOR: StaticCell<Executor> = StaticCell::new();
 

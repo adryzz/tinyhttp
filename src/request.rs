@@ -42,11 +42,11 @@ pub enum HttpMethod {
 const MAX_HEADER_COUNT: usize = 16;
 
 pub struct HttpRequest<'a> {
-    version: HttpVersion,
-    method: HttpMethod,
-    path: &'a str,
-    body_len: Option<usize>,
-    headers: ManagedMap<'a, RequestHeader<'a>, &'a str>,
+    pub(crate) version: HttpVersion,
+    pub(crate) method: HttpMethod,
+    pub(crate) path: &'a str,
+    pub(crate) body_len: Option<usize>,
+    //pub(crate)headers: ManagedMap<'a, RequestHeader<'a>, &'a str>,
 }
 
 impl<'a> HttpRequest<'a> {

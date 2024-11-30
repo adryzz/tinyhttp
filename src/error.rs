@@ -6,6 +6,12 @@ pub enum Error {
 
     /// The TCP socket ran out of data and the remote peer closed it.
     EOF,
+
+    /// The client sent a malformed request. HTTP 400 Bad Request
+    BadRequest,
+
+    /// A router for this request hasn't been found. HTTP 404 Not Found
+    RouterNotFound,
 }
 
 impl From<embassy_net::tcp::Error> for Error {
