@@ -46,7 +46,7 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
         }
     }
 
-    pub fn route<F, R>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX>
+    pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX>
     where
         F: AsyncFnMut(&mut RequestReader, &mut ResponseWriter) -> Result<HttpResponse, Error>,
     {

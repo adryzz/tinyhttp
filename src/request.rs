@@ -57,4 +57,8 @@ impl<'a> HttpRequest<'a> {
     pub fn version(&self) -> HttpVersion {
         self.version
     }
+
+    pub fn path(&'a self) -> &'a str {
+        self.path
+    }
 }

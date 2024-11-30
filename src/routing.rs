@@ -10,7 +10,15 @@ macro_rules! router {
             $route:literal => $func:ident,
         )+
     ) => {{
-        |reader, writer| async { Err(::tinyhttp::error::Error::RouterNotFound) }
+        |reader: &mut ::tinyhttp::reader::HttpReader<'_, '_, '_>,
+         writer: &mut ::tinyhttp::writer::HttpWriter<'_, '_, _>| async {
+            match reader.request.path() {
+                $(
+                    $route => $func(reader, writer).await,
+                    )+
+                _ => Err(::tinyhttp::error::Error::RouterNotFound)
+            }
+        }
     }};
 }
 
