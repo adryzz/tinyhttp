@@ -11,9 +11,9 @@ pub mod status;
 mod utils;
 pub mod writer;
 
-use core::ops::AsyncFnMut;
+use core::ops::AsyncFn;
 
-use config::HttpConfig;
+use config::{HttpConfig, StaticPage};
 use embassy_net::tcp::TcpSocket;
 use error::Error;
 use reader::{HttpReader, RequestReader};
@@ -31,7 +31,7 @@ pub struct HttpServer<'a, const TX: usize, const RX: usize> {
 
 pub struct RoutableHttpServer<'a, F, const TX: usize, const RX: usize>
 where
-    F: AsyncFnMut(&mut RequestReader, &mut ResponseWriter) -> Result<HttpResponse, Error>,
+    F: AsyncFn(RequestReader, ResponseWriter, Option<StaticPage>) -> Result<HttpResponse, Error>,
 {
     network_stack: embassy_net::Stack<'a>,
     config: &'a HttpConfig<'a>,
@@ -46,9 +46,12 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
         }
     }
 
+    /// Adds routing information to this [HttpServer]
+    /// 
+    /// Use the [router!] macro to specify your routes
     pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX>
     where
-        F: AsyncFnMut(&mut RequestReader, &mut ResponseWriter) -> Result<HttpResponse, Error>,
+        F: AsyncFn(RequestReader, ResponseWriter, Option<StaticPage>) -> Result<HttpResponse, Error>,
     {
         RoutableHttpServer {
             network_stack: self.network_stack,
@@ -60,7 +63,7 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
 
 impl<'a, F, const TX: usize, const RX: usize> RoutableHttpServer<'a, F, TX, RX>
 where
-    F: AsyncFnMut(&mut RequestReader, &mut ResponseWriter) -> Result<HttpResponse, Error>,
+    F: AsyncFn(RequestReader, ResponseWriter, Option<StaticPage>) -> Result<HttpResponse, Error>,
 {
     pub async fn run(&mut self) {
         let mut tx_buf = [0u8; TX];
@@ -104,20 +107,11 @@ where
                     }
                 };
                 // create writer so the handler can write out an HTTP response
-                let mut writer = ResponseWriter::new(&mut writer, reader.request.version());
+                let writer = ResponseWriter::new(&mut writer, &reader);
 
                 // if a handler exists for this request, use it, otherwise send a 404
-                let result = match self.router.async_call_mut((&mut reader, &mut writer)).await {
+                let result = match self.router.async_call((reader, writer, self.config.http_404)).await {
                     Ok(r) => socket.flush().await.map(|_| r).map_err(|e| e.into()),
-                    Err(Error::RouterNotFound) => {
-                        // if there's a static 404 page, use it.
-                        // otherwise just send an empty 404
-                        if let Some(page) = self.config.http_404 {
-                            writer.static_page(page, StatusCode::NOT_FOUND).await
-                        } else {
-                            routing::empty_404(reader, writer).await
-                        }
-                    }
                     Err(e) => Err(e),
                 };
 

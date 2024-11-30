@@ -77,8 +77,8 @@ async fn http_task(stack: embassy_net::Stack<'static>) {
 }
 
 async fn send_204<'a, 'b, 'c>(
-    _reader: &mut RequestReader<'a, 'b, 'c>,
-    writer: &mut ResponseWriter<'a, 'b>,
+    _reader: RequestReader<'a, 'b, 'c>,
+    writer: ResponseWriter<'a, 'b>,
 ) -> Result<HttpResponse, Error> {
     writer
         .start(StatusCode::NO_CONTENT)

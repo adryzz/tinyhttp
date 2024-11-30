@@ -9,9 +9,6 @@ pub enum Error {
 
     /// The client sent a malformed request. HTTP 400 Bad Request
     BadRequest,
-
-    /// A router for this request hasn't been found. HTTP 404 Not Found
-    RouterNotFound,
 }
 
 impl From<embassy_net::tcp::Error> for Error {

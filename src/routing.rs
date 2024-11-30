@@ -10,25 +10,25 @@ macro_rules! router {
             $route:literal => $func:ident,
         )+
     ) => {{
-        |reader: &mut ::tinyhttp::reader::HttpReader<'_, '_, '_>,
-         writer: &mut ::tinyhttp::writer::HttpWriter<'_, '_, _>| async {
+        |reader: ::tinyhttp::reader::HttpReader<'_, '_, '_>,
+         writer: ::tinyhttp::writer::HttpWriter<'_, '_, _>,
+         http_404: Option<::tinyhttp::config::StaticPage<'_>>| async {
             match reader.request.path() {
                 $(
                     $route => $func(reader, writer).await,
                     )+
-                _ => Err(::tinyhttp::error::Error::RouterNotFound)
+                _ => {
+                    if let Some(page) = http_404 {
+                        writer.static_page(page, StatusCode::NOT_FOUND).await
+                    } else {
+                        writer
+                        .start(StatusCode::NOT_FOUND)
+                        .await?
+                        .body_empty()
+                        .await
+                    }
+                }
             }
         }
     }};
-}
-
-pub(crate) async fn empty_404<'a, 'b, 'c>(
-    _reader: RequestReader<'a, 'b, 'c>,
-    writer: ResponseWriter<'a, 'b>,
-) -> Result<HttpResponse, Error> {
-    writer
-        .start(StatusCode::NOT_FOUND)
-        .await?
-        .body_empty()
-        .await
 }
