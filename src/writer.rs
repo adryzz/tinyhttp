@@ -2,7 +2,10 @@ use core::marker::PhantomData;
 
 use embassy_net::tcp::TcpWriter;
 
-use crate::{config::StaticPage, error::Error, reader::RequestReader, request::HttpVersion, status::StatusCode, utils};
+use crate::{
+    config::StaticPage, error::Error, reader::RequestReader, request::HttpVersion,
+    status::StatusCode, utils,
+};
 
 /// Used to write HTTP responses.
 ///
@@ -49,7 +52,8 @@ async fn write_bytes<'a, 'b>(socket: &'a mut TcpWriter<'b>, bytes: &[u8]) -> Res
 
 impl<'a, 'b> HttpWriter<'a, 'b, Start> {
     pub(crate) fn new(
-        socket: &'a mut TcpWriter<'b>, reader: &RequestReader
+        socket: &'a mut TcpWriter<'b>,
+        reader: &RequestReader,
     ) -> HttpWriter<'a, 'b, Start> {
         HttpWriter {
             socket,

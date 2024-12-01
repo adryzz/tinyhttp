@@ -73,13 +73,14 @@ async fn http_task(stack: embassy_net::Stack<'static>) {
             "/" => send_204,
         })
         .run()
-        .await
+        .await;
 }
 
-async fn send_204<'a, 'b, 'c>(
-    _reader: RequestReader<'a, 'b, 'c>,
-    writer: ResponseWriter<'a, 'b>,
+async fn send_204(
+    _reader: RequestReader<'_, '_, '_>,
+    writer: ResponseWriter<'_, '_>,
 ) -> Result<HttpResponse, Error> {
+    log::debug!("call");
     writer
         .start(StatusCode::NO_CONTENT)
         .await?

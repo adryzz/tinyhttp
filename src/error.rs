@@ -1,3 +1,4 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// TCP error. Can't return any error page
     Tcp(embassy_net::tcp::Error),

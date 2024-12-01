@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(async_fn_traits)]
+#![feature(async_closure)]
 
 pub mod config;
 pub mod error;
@@ -31,7 +32,10 @@ pub struct HttpServer<'a, const TX: usize, const RX: usize> {
 
 pub struct RoutableHttpServer<'a, F, const TX: usize, const RX: usize>
 where
-    F: AsyncFn(RequestReader, ResponseWriter, Option<StaticPage>) -> Result<HttpResponse, Error>,
+    F: for<'c, 'd, 'e> AsyncFn(
+        RequestReader<'c, 'd, 'e>,
+        ResponseWriter<'c, 'd>,
+    ) -> Result<HttpResponse, Error>,
 {
     network_stack: embassy_net::Stack<'a>,
     config: &'a HttpConfig<'a>,
@@ -47,11 +51,14 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
     }
 
     /// Adds routing information to this [HttpServer]
-    /// 
+    ///
     /// Use the [router!] macro to specify your routes
     pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX>
     where
-        F: AsyncFn(RequestReader, ResponseWriter, Option<StaticPage>) -> Result<HttpResponse, Error>,
+        F: for<'c, 'd, 'e> AsyncFn(
+            RequestReader<'c, 'd, 'e>,
+            ResponseWriter<'c, 'd>,
+        ) -> Result<HttpResponse, Error>,
     {
         RoutableHttpServer {
             network_stack: self.network_stack,
@@ -63,7 +70,10 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
 
 impl<'a, F, const TX: usize, const RX: usize> RoutableHttpServer<'a, F, TX, RX>
 where
-    F: AsyncFn(RequestReader, ResponseWriter, Option<StaticPage>) -> Result<HttpResponse, Error>,
+    F: for<'c, 'd, 'e> AsyncFn(
+        RequestReader<'c, 'd, 'e>,
+        ResponseWriter<'c, 'd>,
+    ) -> Result<HttpResponse, Error>,
 {
     pub async fn run(&mut self) {
         let mut tx_buf = [0u8; TX];
@@ -110,7 +120,7 @@ where
                 let writer = ResponseWriter::new(&mut writer, &reader);
 
                 // if a handler exists for this request, use it, otherwise send a 404
-                let result = match self.router.async_call((reader, writer, self.config.http_404)).await {
+                let result = match self.router.async_call((reader, writer)).await {
                     Ok(r) => socket.flush().await.map(|_| r).map_err(|e| e.into()),
                     Err(e) => Err(e),
                 };
