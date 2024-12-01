@@ -4,13 +4,17 @@ A `no_std` (and no `alloc`) async HTTP/1.1 ergonomic server implementation, base
 
 This crate intentionally does not implement HTTP/2 (or HTTP/3), or any TLS integration
 
+> [!NOTE]  
+> While this HTTP server implementation is under heavy development and working, it's NOT meant for production use yet, and its API surface is NOT stable.
+
 ## Design goals
 - No standard library
-- No dynamic allocations (unless you enable the optional `alloc` feature)
+- No dynamic allocations
 - No panics
 - Low memory/flash footprint
 - RFC compliant
 - Suitable for embedded web UIs
+- Blazingly fast (🚀🚀🚀)
 
 ## Design non-goals
 - Resiliency against state machine or Denial of Service attacks
