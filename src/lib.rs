@@ -1,6 +1,5 @@
 #![no_std]
 #![feature(async_fn_traits)]
-#![feature(async_closure)]
 
 pub mod config;
 pub mod error;
@@ -14,11 +13,10 @@ pub mod writer;
 
 use core::ops::AsyncFn;
 
-use config::{HttpConfig, StaticPage};
+use config::HttpConfig;
 use embassy_net::tcp::TcpSocket;
 use error::Error;
 use reader::{HttpReader, RequestReader};
-use status::StatusCode;
 use writer::{HttpResponse, ResponseWriter};
 
 #[cfg(not(any(feature = "ipv4", feature = "ipv6")))]
@@ -97,7 +95,7 @@ where
             loop {
                 let (mut reader, mut writer) = socket.split();
                 // wait for HTTP request
-                let mut reader = match HttpReader::try_new(&mut reader).await {
+                let reader = match HttpReader::try_new(&mut reader).await {
                     Ok(r) => r,
                     Err(Error::Tcp(_)) => {
                         #[cfg(feature = "defmt")]

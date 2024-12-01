@@ -1,5 +1,4 @@
 #![feature(impl_trait_in_assoc_type)]
-#![feature(generic_arg_infer)]
 
 use clap::Parser;
 use embassy_executor::{Executor, Spawner};
