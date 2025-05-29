@@ -111,6 +111,7 @@ where
                     }
                     Err(Error::EOF) => {
                         socket.close();
+                        _ = socket.flush().await;
                         break;
                     }
                     _ => {
