@@ -6,17 +6,21 @@ macro_rules! router {
         )+
     ) => {
         {
-        async fn routerfn<'a, 'b, 'c>(reader: ::tinyhttp::reader::RequestReader<'a, 'b, 'c>,
-         writer: ::tinyhttp::writer::ResponseWriter<'a, 'b>) -> Result<::tinyhttp::writer::HttpResponse, ::tinyhttp::error::Error> {
+        async fn routerfn<'a, 'b, 'c>(reader: $crate::reader::RequestReader<'a, 'b, 'c>,
+         writer: $crate::writer::ResponseWriter<'a, 'b>) -> Result<$crate::writer::HttpResponse, $crate::error::Error> {
             match reader.request.path() {
                 $(
                     $route => {
+                        $crate::log!(debug, "Routing page '{}' to {}", reader.request.path(), stringify!($func));
+
                         $func(reader, writer).await
                     },
                     )+
                 _ => {
+                        $crate::log!(debug, "Routing page '{}' to 404", reader.request.path());
+
                         writer
-                        .start(StatusCode::NOT_FOUND)
+                        .start($crate::status::StatusCode::NOT_FOUND)
                         .await?
                         .body_empty()
                         .await

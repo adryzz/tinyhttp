@@ -9,19 +9,23 @@ heapless = "0.8.0"
 managed = { version = "0.8", default-features = false, features = ["map"] }
 mr-mime = { version = "0.1.1", default-features = false }
 
-embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.5.0", features = ["medium-ip", "tcp"] }
-embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0.3.2" }
+embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.7.0", features = ["medium-ip", "tcp"] }
+embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0.4.0" }
 
 
 unicase = "2.8.0"
 numtoa = "0.2.4"
+winnow = { version = "0.6.20", default-features = false }
+embassy-futures = { git = "https://github.com/embassy-rs/embassy.git", version = "0.1.1" }
+embedded-io-async = "0.6.1"
+log = { version = "0.4.22", optional = true }
 
 [dev-dependencies]
 static_cell = "2.1.0"
 rand_core = { version = "0.6.4", features = ["std"] }
-embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", version = "0.6.3", features = ["nightly", "arch-std", "executor-thread", "log", "integrated-timers"] }
-embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.5.0", features = ["dhcpv4", "dns", "log", "medium-ethernet", "medium-ip", "proto-ipv4", "proto-ipv6", "raw", "std", "tcp"] }
-embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0.3.2", features = ["log", "std", ] }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy.git", version = "0.7.0", features = ["nightly", "arch-std", "executor-thread", "log"] }
+embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.7.0", features = ["dhcpv4", "dns", "log", "medium-ethernet", "medium-ip", "proto-ipv4", "proto-ipv6", "raw", "std", "tcp"] }
+embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0.4.0", features = ["log", "std", ] }
 log = "0.4.22"
 clap = { version = "4.5.21", features = ["derive"] }
 embassy-net-tuntap = { git = "https://github.com/embassy-rs/embassy.git" }
@@ -34,6 +38,8 @@ default = ["ipv4", "ipv6", "default_error_pages"]
 # Adds default error pages
 default_error_pages = []
 
-defmt = ["dep:defmt", "heapless/defmt-03"]
+defmt = ["dep:defmt", "heapless/defmt-03", "embassy-futures/defmt"]
 ipv4 = ["embassy-net/proto-ipv4"]
 ipv6 = ["embassy-net/proto-ipv6"]
+log = ["dep:log"]
+

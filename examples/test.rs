@@ -54,20 +54,21 @@ async fn main_task(spawner: Spawner) {
     let seed = u64::from_le_bytes(seed);
 
     // Init network stack
-    static RESOURCES: StaticCell<StackResources<4>> = StaticCell::new();
+    static RESOURCES: StaticCell<StackResources<2>> = StaticCell::new();
     let (stack, runner) =
         embassy_net::new(device, config, RESOURCES.init(StackResources::new()), seed);
-    spawner.spawn(http_task(stack)).unwrap();
-    // Launch network task
+
     spawner.spawn(net_task(runner)).unwrap();
+    // Launch network task
+    spawner.must_spawn(http_task(stack));
 }
 
-#[embassy_executor::task(pool_size = 8)]
+#[embassy_executor::task(pool_size = 2)]
 async fn http_task(stack: embassy_net::Stack<'static>) {
     // Then we can use it!
     let config = HttpConfig::default();
 
-    HttpServer::<1024, 1024>::new(stack, &config)
+    HttpServer::<1024, 1024, 2048>::new(stack, &config)
         .route(router! {
             "/" => send_204,
         })
@@ -79,7 +80,6 @@ async fn send_204(
     _reader: RequestReader<'_, '_, '_>,
     writer: ResponseWriter<'_, '_>,
 ) -> Result<HttpResponse, Error> {
-    log::debug!("call");
     writer
         .start(StatusCode::NO_CONTENT)
         .await?

@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
 use embassy_net::tcp::TcpWriter;
+use embedded_io_async::Write;
 
 use crate::{
     config::StaticPage, error::Error, reader::RequestReader, request::HttpVersion,
@@ -35,21 +36,6 @@ pub trait HttpStage {}
 impl HttpStage for Start {}
 impl HttpStage for Headers {}
 
-async fn write_bytes<'a, 'b>(socket: &'a mut TcpWriter<'b>, bytes: &[u8]) -> Result<(), Error> {
-    #[cfg(feature = "defmt")]
-    if bytes.len() > self.socket.send_capacity() {
-        defmt::trace!("Write bigger than buffer size!");
-    }
-
-    let mut total = 0;
-    while total < bytes.len() {
-        let written = socket.write(bytes).await?;
-        total += written;
-    }
-
-    Ok(())
-}
-
 impl<'a, 'b> HttpWriter<'a, 'b, Start> {
     pub(crate) fn new(
         socket: &'a mut TcpWriter<'b>,
@@ -64,11 +50,13 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
 
     pub async fn start(self, code: StatusCode) -> Result<HttpWriter<'a, 'b, Headers>, Error> {
         match self.version {
-            HttpVersion::Http10 => write_bytes(self.socket, b"HTTP/1.0 ").await?,
-            HttpVersion::Http11 => write_bytes(self.socket, b"HTTP/1.1 ").await?,
+            HttpVersion::Http10 => self.socket.write_all(b"HTTP/1.0 ").await?,
+            HttpVersion::Http11 => self.socket.write_all(b"HTTP/1.1 ").await?,
         }
-        write_bytes(self.socket, code.as_str().unwrap().as_bytes()).await?;
-        write_bytes(self.socket, b"\r\n").await?;
+        self.socket
+            .write_all(code.as_str().unwrap().as_bytes())
+            .await?;
+        self.socket.write_all(b"\r\n").await?;
 
         Ok(HttpWriter {
             socket: self.socket,
@@ -88,16 +76,16 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
 
 impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
     pub async fn header(self, name: &str, value: &str) -> Result<Self, Error> {
-        write_bytes(self.socket, name.as_bytes()).await?;
-        write_bytes(self.socket, b": ").await?;
-        write_bytes(self.socket, value.as_bytes()).await?;
-        write_bytes(self.socket, b"\r\n").await?;
+        self.socket.write_all(name.as_bytes()).await?;
+        self.socket.write_all(b": ").await?;
+        self.socket.write_all(value.as_bytes()).await?;
+        self.socket.write_all(b"\r\n").await?;
 
         Ok(self)
     }
 
     pub async fn body_empty(self) -> Result<HttpResponse, Error> {
-        write_bytes(self.socket, b"\r\n").await?;
+        self.socket.write_all(b"\r\n").await?;
 
         Ok(HttpResponse { _marker: () })
     }
@@ -123,8 +111,8 @@ impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
             .await?;
 
         // send newline to go to body section
-        write_bytes(self.socket, b"\r\n").await?;
-        write_bytes(self.socket, body).await?;
+        self.socket.write_all(b"\r\n").await?;
+        self.socket.write_all(body).await?;
 
         Ok(HttpResponse { _marker: () })
     }
@@ -142,7 +130,7 @@ impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
             .await?;
 
         // send newline to go to body section
-        write_bytes(self.socket, b"\r\n").await?;
+        self.socket.write_all(b"\r\n").await?;
 
         Ok(ChunkedHttpWriter {
             socket: self.socket,
@@ -163,7 +151,7 @@ impl<'a, 'b> ChunkedHttpWriter<'a, 'b> {
         if self.written == self.total {
             return Ok(Some(HttpResponse { _marker: () }));
         }
-        write_bytes(self.socket, chunk).await?;
+        self.socket.write_all(chunk).await?;
         self.written += chunk.len();
         // TODO: implement Drop to send a RST packet here
         // is it needed?

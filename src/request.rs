@@ -41,6 +41,7 @@ pub enum HttpMethod {
 /// Max number of headers parsed
 const MAX_HEADER_COUNT: usize = 16;
 
+#[derive(Debug, Clone, Copy)]
 pub struct HttpRequest<'a> {
     pub(crate) version: HttpVersion,
     pub(crate) method: HttpMethod,
@@ -60,5 +61,9 @@ impl<'a> HttpRequest<'a> {
 
     pub fn path(&'a self) -> &'a str {
         self.path
+    }
+
+    pub fn method(&'a self) -> HttpMethod {
+        self.method
     }
 }

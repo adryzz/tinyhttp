@@ -1,6 +1,6 @@
-#![no_std]
+//#![no_std]
 #![feature(async_fn_traits)]
-
+#![feature(try_find)]
 pub mod config;
 pub mod error;
 mod headers;
@@ -10,6 +10,9 @@ pub mod routing;
 pub mod status;
 mod utils;
 pub mod writer;
+
+#[doc(hidden)]
+pub mod logging;
 
 use core::ops::AsyncFn;
 
@@ -23,12 +26,12 @@ use writer::{HttpResponse, ResponseWriter};
 compile_error!("You must select at least one of the following features: 'ipv4', 'ipv6'");
 
 /// HTTP server without any routes associated with it
-pub struct HttpServer<'a, const TX: usize, const RX: usize> {
+pub struct HttpServer<'a, const TX: usize, const RX: usize, const HTTP: usize> {
     network_stack: embassy_net::Stack<'a>,
     config: &'a HttpConfig<'a>,
 }
 
-pub struct RoutableHttpServer<'a, F, const TX: usize, const RX: usize>
+pub struct RoutableHttpServer<'a, F, const TX: usize, const RX: usize, const HTTP: usize>
 where
     F: for<'c, 'd, 'e> AsyncFn(
         RequestReader<'c, 'd, 'e>,
@@ -40,7 +43,7 @@ where
     router: F,
 }
 
-impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
+impl<'a, const TX: usize, const RX: usize, const HTTP: usize> HttpServer<'a, TX, RX, HTTP> {
     pub fn new(network_stack: embassy_net::Stack<'static>, config: &'a HttpConfig) -> Self {
         Self {
             network_stack,
@@ -51,7 +54,7 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
     /// Adds routing information to this [HttpServer]
     ///
     /// Use the [router!] macro to specify your routes
-    pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX>
+    pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX, HTTP>
     where
         F: for<'c, 'd, 'e> AsyncFn(
             RequestReader<'c, 'd, 'e>,
@@ -66,7 +69,8 @@ impl<'a, const TX: usize, const RX: usize> HttpServer<'a, TX, RX> {
     }
 }
 
-impl<'a, F, const TX: usize, const RX: usize> RoutableHttpServer<'a, F, TX, RX>
+impl<'a, F, const TX: usize, const RX: usize, const HTTP: usize>
+    RoutableHttpServer<'a, F, TX, RX, HTTP>
 where
     F: for<'c, 'd, 'e> AsyncFn(
         RequestReader<'c, 'd, 'e>,
@@ -86,30 +90,32 @@ where
             )));
 
             if let Err(_) = socket.accept(self.config.port).await {
-                #[cfg(feature = "defmt")]
-                defmt::debug!("Error while accepting socket");
+                log!(error, "Error while accepting socket");
 
                 continue;
             }
 
+            let mut http_buf = [0u8; HTTP];
+
             loop {
                 let (mut reader, mut writer) = socket.split();
                 // wait for HTTP request
-                let reader = match HttpReader::try_new(&mut reader).await {
+                let reader = match HttpReader::try_new(&mut reader, &mut http_buf).await {
                     Ok(r) => r,
                     Err(Error::Tcp(_)) => {
-                        #[cfg(feature = "defmt")]
-                        defmt::debug!("TCP error while parsing HTTP request.");
+                        log!(error, "TCP error while parsing HTTP request.");
 
                         socket.abort();
                         _ = socket.flush().await;
                         break;
                     }
+                    Err(Error::EOF) => {
+                        socket.close();
+                        break;
+                    }
                     _ => {
-                        #[cfg(feature = "defmt")]
-                        defmt::debug!("Error while parsing HTTP request.");
-
-                        socket.abort();
+                        log!(error, "Error while parsing HTTP request.");
+                        socket.close();
                         _ = socket.flush().await;
                         break;
                     }
@@ -128,16 +134,14 @@ where
                         // TODO: handle connection keepalive if enabled
                     }
                     Err(Error::Tcp(_)) => {
-                        #[cfg(feature = "defmt")]
-                        defmt::debug!("TCP error while sending HTTP response.");
+                        log!(error, "TCP error while sending HTTP response.");
 
                         socket.abort();
                         _ = socket.flush().await;
                         break;
                     }
                     _ => {
-                        #[cfg(feature = "defmt")]
-                        defmt::debug!("Error while handling HTTP request.");
+                        log!(error, "Error while handling HTTP request.");
 
                         // TODO: instead of sending RST, see if we can send other HTTP error codes
 
