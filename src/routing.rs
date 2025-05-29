@@ -6,7 +6,7 @@ macro_rules! router {
         )+
     ) => {
         {
-        async fn routerfn<'a, 'b, 'c>(reader: $crate::reader::RequestReader<'a, 'b, 'c>,
+        async fn routerfn<'a, 'b, 'c>(config: &'a $crate::config::HttpConfig<'b>, reader: $crate::reader::RequestReader<'a, 'b, 'c>,
          writer: $crate::writer::ResponseWriter<'a, 'b>) -> Result<$crate::writer::HttpResponse, $crate::error::Error> {
             match reader.request.path() {
                 $(
@@ -19,11 +19,19 @@ macro_rules! router {
                 _ => {
                         $crate::log!(debug, "Routing page '{}' to 404", reader.request.path());
 
-                        writer
-                        .start($crate::status::StatusCode::NOT_FOUND)
-                        .await?
-                        .body_empty()
-                        .await
+                        // handle 404s
+
+                        if let Some(page) = config.http_404 {
+                            writer
+                            .static_page(page, $crate::status::StatusCode::NOT_FOUND)
+                            .await
+                        } else {
+                            writer
+                            .start($crate::status::StatusCode::NOT_FOUND)
+                            .await?
+                            .body_empty()
+                            .await
+                        }
                     }
                 }
             }

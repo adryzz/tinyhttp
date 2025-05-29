@@ -34,6 +34,7 @@ pub struct HttpServer<'a, const TX: usize, const RX: usize, const HTTP: usize> {
 pub struct RoutableHttpServer<'a, F, const TX: usize, const RX: usize, const HTTP: usize>
 where
     F: for<'c, 'd, 'e> AsyncFn(
+        &'c HttpConfig<'d>,
         RequestReader<'c, 'd, 'e>,
         ResponseWriter<'c, 'd>,
     ) -> Result<HttpResponse, Error>,
@@ -57,6 +58,7 @@ impl<'a, const TX: usize, const RX: usize, const HTTP: usize> HttpServer<'a, TX,
     pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX, HTTP>
     where
         F: for<'c, 'd, 'e> AsyncFn(
+            &'c HttpConfig<'d>,
             RequestReader<'c, 'd, 'e>,
             ResponseWriter<'c, 'd>,
         ) -> Result<HttpResponse, Error>,
@@ -73,6 +75,7 @@ impl<'a, F, const TX: usize, const RX: usize, const HTTP: usize>
     RoutableHttpServer<'a, F, TX, RX, HTTP>
 where
     F: for<'c, 'd, 'e> AsyncFn(
+        &'c HttpConfig<'d>,
         RequestReader<'c, 'd, 'e>,
         ResponseWriter<'c, 'd>,
     ) -> Result<HttpResponse, Error>,
@@ -125,7 +128,7 @@ where
                 let writer = ResponseWriter::new(&mut writer, &reader);
 
                 // if a handler exists for this request, use it, otherwise send a 404
-                let result = match self.router.async_call((reader, writer)).await {
+                let result = match self.router.async_call((self.config, reader, writer)).await {
                     Ok(r) => socket.flush().await.map(|_| r).map_err(|e| e.into()),
                     Err(e) => Err(e),
                 };
