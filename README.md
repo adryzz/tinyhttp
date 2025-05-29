@@ -19,3 +19,17 @@ This crate intentionally does not implement HTTP/2 (or HTTP/3), or any TLS integ
 ## Design non-goals
 - Resiliency against state machine or Denial of Service attacks
 - Many concurrent clients
+
+### Woah, those function signatures are scary!
+
+In the API, you will find function signatures like the following:
+```rs
+pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX, HTTP>
+where
+    F: for<'c, 'd, 'e> AsyncFn(&'c HttpConfig<'d>, RequestReader<'c, 'd, 'e>, ResponseWriter<'c, 'd>) -> Result<HttpResponse, Error>
+```
+These are necessary in order to provide the static guarantees that allow this crate to operate without a heap error-free.
+
+I've done my best to abstract them away using convenient macros like `router!`.
+
+Feel free to open issues if you have a better API in mind.
