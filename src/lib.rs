@@ -119,7 +119,7 @@ where
                         break;
                     }
                     _ => {
-                        log!(error, "Error while parsing HTTP request.");
+                        log!(debug, "Error while parsing HTTP request, sending HTTP 400.");
 
                         // send 400
                         let writer = ResponseWriter::new_http_11(&mut writer);
