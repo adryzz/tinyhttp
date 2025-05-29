@@ -20,6 +20,7 @@ use config::HttpConfig;
 use embassy_net::tcp::TcpSocket;
 use error::Error;
 use reader::{HttpReader, RequestReader};
+use status::StatusCode;
 use writer::{HttpResponse, ResponseWriter};
 
 #[cfg(not(any(feature = "ipv4", feature = "ipv6")))]
@@ -119,6 +120,16 @@ where
                     }
                     _ => {
                         log!(error, "Error while parsing HTTP request.");
+
+                        // send 400
+                        let writer = ResponseWriter::new_http_11(&mut writer);
+                        
+                        let _ = writer
+                        .static_page_or_empty(
+                            self.config.http_400,
+                            StatusCode::BAD_REQUEST
+                        ).await;
+
                         socket.close();
                         _ = socket.flush().await;
                         break;

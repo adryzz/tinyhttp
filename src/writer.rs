@@ -48,6 +48,16 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         }
     }
 
+    pub(crate) fn new_http_11(
+        socket: &'a mut TcpWriter<'b>,
+    ) -> HttpWriter<'a, 'b, Start> {
+        HttpWriter {
+            socket,
+            version: HttpVersion::Http11,
+            marker: PhantomData,
+        }
+    }
+
     pub async fn start(self, code: StatusCode) -> Result<HttpWriter<'a, 'b, Headers>, Error> {
         match self.version {
             HttpVersion::Http10 => self.socket.write_all(b"HTTP/1.0 ").await?,
@@ -71,6 +81,18 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         code: StatusCode,
     ) -> Result<HttpResponse, Error> {
         self.start(code).await?.body_static_page(page).await
+    }
+
+    pub async fn static_page_or_empty(
+        self,
+        page: Option<StaticPage<'a>>,
+        code: StatusCode,
+    ) -> Result<HttpResponse, Error> {
+        if let Some(page) = page {
+            self.start(code).await?.body_static_page(page).await
+        } else {
+            self.start(code).await?.body_empty().await
+        }
     }
 }
 

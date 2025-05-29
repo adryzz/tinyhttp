@@ -20,18 +20,11 @@ macro_rules! router {
                         $crate::log!(debug, "Routing page '{}' to 404", reader.request.path());
 
                         // handle 404s
-
-                        if let Some(page) = config.http_404 {
-                            writer
-                            .static_page(page, $crate::status::StatusCode::NOT_FOUND)
-                            .await
-                        } else {
-                            writer
-                            .start($crate::status::StatusCode::NOT_FOUND)
-                            .await?
-                            .body_empty()
-                            .await
-                        }
+                        writer
+                        .static_page_or_empty(
+                            config.http_404,
+                            $crate::status::StatusCode::NOT_FOUND
+                        ).await
                     }
                 }
             }
