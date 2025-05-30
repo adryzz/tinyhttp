@@ -1,5 +1,5 @@
-///! This module was taken in part from the [hyper](https://github.com/hyperium/http/blob/master/src/status.rs) rust HTTP crate.
-///
+//! This module was taken in part from the [hyper](https://github.com/hyperium/http/blob/master/src/status.rs) rust HTTP crate.
+//
 use core::convert::TryFrom;
 use core::num::NonZeroU16;
 

@@ -93,7 +93,7 @@ where
                 self.config.keepalive.unwrap_or(5) as u64,
             )));
 
-            if let Err(_) = socket.accept(self.config.port).await {
+            if (socket.accept(self.config.port).await).is_err() {
                 log!(error, "Error while accepting socket");
 
                 continue;

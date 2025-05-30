@@ -38,17 +38,17 @@ impl HttpStage for Headers {}
 
 macro_rules! static_page {
     ($writer:expr, $page:expr, $code:expr $(,($name:expr, $value:expr))*) => {
-        (async || {
+        async {
             $writer.start($code).await?
             $( .header($name, $value).await? )*
             .body_static_page($page).await
-        })().await
+            }.await
     };
 }
 
 macro_rules! static_or_empty_page {
     ($writer:expr, $page:expr, $code:expr $(,($name:expr, $value:expr))*) => {
-        (async || {
+        async {
             if let Some(page) = $page {
                 $writer.start($code)
                 .await?
@@ -68,7 +68,7 @@ macro_rules! static_or_empty_page {
                 .body_empty()
                 .await
             }
-        })().await
+        }.await
 
     };
 }

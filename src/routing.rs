@@ -48,8 +48,7 @@ macro_rules! basic_auth {
         {
             use base64::Engine;
             // TODO: make sure this doesn't panic
-            if head.starts_with("Basic ") {
-                let base64 = &head[6..];
+            if let Some(base64) = head.strip_prefix("Basic ") {
 
                 let mut buf = [0u8; 64];
                 if let Ok(len) = ::base64::prelude::BASE64_STANDARD.decode_slice(base64, &mut buf) {
