@@ -10,6 +10,7 @@ use crate::{error::Error, request::HttpRequest, utils};
 pub struct HttpReader<'a, 'b, 'c> {
     socket: &'a mut TcpReader<'b>,
     pub request: HttpRequest<'c>,
+    remaining_body_bytes: Option<&'c [u8]>
 }
 
 impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
@@ -21,7 +22,7 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
         // or if we can't find it in the buffer and there's more to read, send a bad request error.
 
         let mut total = 0usize;
-        let mut body_inline = false;
+        //let mut body_inline = false;
 
         loop {
             if buf.len() == total {
@@ -38,7 +39,7 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
             if count == 0 {
                 // we ran out of data
                 // if the request has a body, it should be within our buffer
-                body_inline = true;
+                //body_inline = true;
                 break;
             }
             total += count;
@@ -55,12 +56,32 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
         let buf = &buf[0..total];
 
         let request = utils::parse(buf)?;
-        Ok(Self { socket, request })
+
+        // check if the request body is fully contained in the RX buffer.
+        // if it isn't, then let the body reader handle it.
+
+        if let Some(l) = request.body_len {
+            if let Some(b) = request.body_inline {
+                if l != b.len() {
+                    let a = request.body_inline;
+                    return Ok(Self { socket, request, remaining_body_bytes: a });
+                }
+            }
+        }
+
+        Ok(Self { socket, request, remaining_body_bytes: None })
     }
 
+    /// Returns a handle to read the full body streaming.
+    /// Returns [`None`] if there's no body or if the body is inline.
+    /// For more information, see [`HttpRequest::body_inline`]
     pub fn body(self) -> Option<HttpBodyReader<'a, 'b>> {
         if let Some(len) = self.request.body_len() {
-            Some(HttpBodyReader::new(self.socket, len))
+            if len != self.request.body_inline.unwrap().len() {
+                Some(HttpBodyReader::new(self.socket, len))
+            } else {
+                None
+            }
         } else {
             None
         }
@@ -74,12 +95,15 @@ pub type RequestReader<'a, 'b, 'c> = HttpReader<'a, 'b, 'c>;
 /// Uses typestate to make it impossible to misuse.
 pub struct HttpBodyReader<'a, 'b> {
     socket: &'a mut TcpReader<'b>,
+    /// The length of the HTTP body, in bytes.
     len: usize,
+    /// The amount of data read from the HTTP body, in bytes.
     read: usize,
 }
 
 impl<'a, 'b> HttpBodyReader<'a, 'b> {
     fn new(socket: &'a mut TcpReader<'b>, len: usize) -> Self {
+        // TODO: include the inline data somehow
         Self {
             socket,
             len,

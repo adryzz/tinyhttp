@@ -88,17 +88,22 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
             path,
             headers,
             body_len: None,
+            body_inline: None
         })
     }
 
     // TODO: check if there's a \r\n (that would indicate the headers have an ending)
     // if not, return with a 413 Entity Too Large.
 
+    let mut last_idx = idx+1;
+
     for _ in 0..request::MAX_HEADER_COUNT {
         let idx = next_section
             .iter()
             .position(|a| *a == b'\n')
             .ok_or(Error::BadRequest)?;
+
+        last_idx = idx + 1;
 
         // the ending is \r\n\r\n, so after the \n there's a \r
         if next_section[idx + 1] == b'\r' {
@@ -130,8 +135,23 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
         None => None,
     };
 
+
     // TODO: if the body is inline (fully in the buffer), parse it
-    // otherwise leave it to the user somehow
+    // otherwise let the user read it in chunks
+
+    let last = &next_section[last_idx+2..];
+
+    let body_inline = if last.is_empty() {
+        None
+    } else {
+        if let Some(len) = body_len {
+            if len < last.len() {
+                return Err(Error::BadRequest);
+            }
+        }
+
+        Some(last)
+    };
 
     Ok(HttpRequest {
         version,
@@ -139,6 +159,7 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
         path,
         headers,
         body_len,
+        body_inline
     })
 }
 
