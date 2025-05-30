@@ -123,12 +123,10 @@ where
 
                         // send 400
                         let writer = ResponseWriter::new_http_11(&mut writer);
-                        
+
                         let _ = writer
-                        .static_page_or_empty(
-                            self.config.http_400,
-                            StatusCode::BAD_REQUEST
-                        ).await;
+                            .static_page_or_empty(self.config.http_400, StatusCode::BAD_REQUEST)
+                            .await;
 
                         socket.close();
                         _ = socket.flush().await;
@@ -138,8 +136,27 @@ where
                 // create writer so the handler can write out an HTTP response
                 let writer = ResponseWriter::new(&mut writer, &reader);
 
-                // if a handler exists for this request, use it, otherwise send a 404
-                let result = match self.router.async_call((self.config, reader, writer)).await {
+                // if global http basic auth is enabled, check for authentication
+                // if not, this is always true at compile time
+                let result = if routing::global_basic_auth!(self.config, reader) {
+                    // if a handler exists for this request, use it, otherwise send a 404
+                    self.router.async_call((self.config, reader, writer)).await
+                } else {
+                    log!(
+                        debug,
+                        "Asking for authentication to access page {}",
+                        reader.request.path()
+                    );
+                    writer::static_or_empty_page!(
+                        writer,
+                        self.config.http_401,
+                        StatusCode::UNAUTHORIZED,
+                        ("WWW-Authenticate", "Basic")
+                    )
+                };
+
+                // flush and map the error
+                let result = match result {
                     Ok(r) => socket.flush().await.map(|_| r).map_err(|e| e.into()),
                     Err(e) => Err(e),
                 };

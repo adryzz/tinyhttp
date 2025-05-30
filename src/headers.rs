@@ -27,27 +27,36 @@ pub enum RequestHeader<'a> {
     Range,
     Other(&'a str),
 }
-/*
-impl<'a> core::str::FromStr for RequestHeader<'a> {
-    type Err = core::convert::Infallible;
 
-    fn from_str(s: & str) -> Result<Self, Self::Err> {
+impl<'a> RequestHeader<'a> {
+    pub fn from_str(s: &'a str) -> RequestHeader<'a> {
         let case = UniCase::ascii(s);
 
-
-        Ok(match case {
-            HOST => Self::Host,
-            ACCEPT => Self::Accept,
-            ACCEPT_ENCODING => Self::AcceptEncoding,
-            AUTHORIZATION => Self::Authorization,
-            CONNECTION => Self::Connection,
-            CONTENT_ENCODING => Self::ContentEncoding,
-            CONTENT_LENGTH => Self::ContentLength,
-            CONTENT_TYPE => Self::ContentType,
-            COOKIE => Self::Cookie,
-            DATE => Self::Date,
-            RANGE => Self::Range,
-            _ => Self::Other(s)
-        })
+        // TODO: improve this garbage
+        if case == HOST {
+            Self::Host
+        } else if case == ACCEPT {
+            Self::Accept
+        } else if case == ACCEPT_ENCODING {
+            Self::AcceptEncoding
+        } else if case == AUTHORIZATION {
+            Self::Authorization
+        } else if case == CONNECTION {
+            Self::Connection
+        } else if case == CONTENT_ENCODING {
+            Self::ContentEncoding
+        } else if case == CONTENT_LENGTH {
+            Self::ContentLength
+        } else if case == CONTENT_TYPE {
+            Self::ContentType
+        } else if case == COOKIE {
+            Self::Cookie
+        } else if case == DATE {
+            Self::Date
+        } else if case == RANGE {
+            Self::Range
+        } else {
+            Self::Other(s)
+        }
     }
-} */
+}

@@ -10,6 +10,9 @@ pub enum Error {
 
     /// The client sent a malformed request. HTTP 400 Bad Request
     BadRequest,
+
+    /// The client sent a request with too many headers or a body too large. HTTP 413 Entity Too Large
+    EntityTooLarge,
 }
 
 impl From<embassy_net::tcp::Error> for Error {

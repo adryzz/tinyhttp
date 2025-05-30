@@ -1,7 +1,15 @@
-const DEFAULT_400: StaticPage = StaticPage::html(include_str!("../static/400.html"));
-const DEFAULT_401: StaticPage = StaticPage::html(include_str!("../static/401.html"));
-const DEFAULT_404: StaticPage = StaticPage::html(include_str!("../static/404.html"));
-const DEFAULT_500: StaticPage = StaticPage::html(include_str!("../static/500.html"));
+#[cfg(feature = "default_error_pages")]
+/// The default HTTP 400 Bad Request page
+pub const DEFAULT_400: StaticPage = StaticPage::html(include_str!("../static/400.html"));
+#[cfg(feature = "default_error_pages")]
+/// The default HTTP 401 Unauthorized page
+pub const DEFAULT_401: StaticPage = StaticPage::html(include_str!("../static/401.html"));
+#[cfg(feature = "default_error_pages")]
+/// The default HTTP 404 Not Found page
+pub const DEFAULT_404: StaticPage = StaticPage::html(include_str!("../static/404.html"));
+#[cfg(feature = "default_error_pages")]
+/// The default HTTP 500 Internal Server Error page
+pub const DEFAULT_500: StaticPage = StaticPage::html(include_str!("../static/500.html"));
 
 #[derive(Debug, Clone, Copy)]
 pub struct HttpConfig<'a> {
@@ -19,6 +27,7 @@ pub struct HttpConfig<'a> {
     /// Username/Password combo for global basic authentication.
     ///
     /// Default: None
+    #[cfg(feature = "global_http_basic_auth")]
     pub basic_auth: Option<(&'a str, &'a str)>,
 
     /// A static page to load when sending a 400 Bad Request error code.
@@ -48,6 +57,7 @@ impl Default for HttpConfig<'static> {
         Self {
             port: 80,
             keepalive: Some(5),
+            #[cfg(feature = "global_http_basic_auth")]
             basic_auth: None,
             http_400: None,
             http_401: None,
@@ -61,6 +71,7 @@ impl Default for HttpConfig<'static> {
         Self {
             port: 80,
             keepalive: Some(5),
+            #[cfg(feature = "global_http_basic_auth")]
             basic_auth: None,
             http_400: Some(DEFAULT_400),
             http_401: Some(DEFAULT_401),

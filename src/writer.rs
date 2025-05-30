@@ -36,7 +36,48 @@ pub trait HttpStage {}
 impl HttpStage for Start {}
 impl HttpStage for Headers {}
 
+macro_rules! static_page {
+    ($writer:expr, $page:expr, $code:expr $(,($name:expr, $value:expr))*) => {
+        (async || {
+            $writer.start($code).await?
+            $( .header($name, $value).await? )*
+            .body_static_page($page).await
+        })().await
+    };
+}
+
+macro_rules! static_or_empty_page {
+    ($writer:expr, $page:expr, $code:expr $(,($name:expr, $value:expr))*) => {
+        (async || {
+            if let Some(page) = $page {
+                $writer.start($code)
+                .await?
+                $(
+                .header($name, $value)
+                .await?
+                )*
+                .body_static_page(page)
+                .await
+            } else {
+                $writer.start($code)
+                .await?
+                $(
+                .header($name, $value)
+                .await?
+                )*
+                .body_empty()
+                .await
+            }
+        })().await
+
+    };
+}
+
+pub(crate) use static_or_empty_page;
+pub(crate) use static_page;
+
 impl<'a, 'b> HttpWriter<'a, 'b, Start> {
+    /// Creates a new HTTP writer with the HTTP version requested by the client.
     pub(crate) fn new(
         socket: &'a mut TcpWriter<'b>,
         reader: &RequestReader,
@@ -48,9 +89,8 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         }
     }
 
-    pub(crate) fn new_http_11(
-        socket: &'a mut TcpWriter<'b>,
-    ) -> HttpWriter<'a, 'b, Start> {
+    /// Creates a new HTTP writer, forcing HTTP/1.1
+    pub(crate) fn new_http_11(socket: &'a mut TcpWriter<'b>) -> HttpWriter<'a, 'b, Start> {
         HttpWriter {
             socket,
             version: HttpVersion::Http11,
@@ -58,6 +98,7 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         }
     }
 
+    /// Starts a HTTP response, with the specified status code.
     pub async fn start(self, code: StatusCode) -> Result<HttpWriter<'a, 'b, Headers>, Error> {
         match self.version {
             HttpVersion::Http10 => self.socket.write_all(b"HTTP/1.0 ").await?,
@@ -75,24 +116,22 @@ impl<'a, 'b> HttpWriter<'a, 'b, Start> {
         })
     }
 
+    /// Serves a static page
     pub async fn static_page(
         self,
         page: StaticPage<'a>,
         code: StatusCode,
     ) -> Result<HttpResponse, Error> {
-        self.start(code).await?.body_static_page(page).await
+        static_page!(self, page, code)
     }
 
+    /// Serves a static page (or empty).
     pub async fn static_page_or_empty(
         self,
         page: Option<StaticPage<'a>>,
         code: StatusCode,
     ) -> Result<HttpResponse, Error> {
-        if let Some(page) = page {
-            self.start(code).await?.body_static_page(page).await
-        } else {
-            self.start(code).await?.body_empty().await
-        }
+        static_or_empty_page!(self, page, code)
     }
 }
 

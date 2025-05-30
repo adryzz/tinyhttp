@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 defmt = { version = "0.3.8", optional = true, features = ["ip_in_core"] }
 heapless = "0.8.0"
-managed = { version = "0.8", default-features = false, features = ["map"] }
 mr-mime = { version = "0.1.1", default-features = false }
 
 embassy-net = { git = "https://github.com/embassy-rs/embassy.git", version = "0.7.0", features = ["medium-ip", "tcp"] }
@@ -15,10 +14,11 @@ embassy-time = { git = "https://github.com/embassy-rs/embassy.git", version = "0
 
 unicase = "2.8.0"
 numtoa = "0.2.4"
-winnow = { version = "0.6.20", default-features = false }
 embassy-futures = { git = "https://github.com/embassy-rs/embassy.git", version = "0.1.1" }
 embedded-io-async = "0.6.1"
 log = { version = "0.4.22", optional = true }
+base64 = { version = "0.22.1", optional = true, default-features = false }
+cfg-if = "1.0.0"
 
 [dev-dependencies]
 static_cell = "2.1.0"
@@ -33,10 +33,22 @@ embedded-io-async = { version = "0.6.1", features = ["std"] }
 env_logger = "0.11.5"
 
 [features]
-default = ["ipv4", "ipv6", "default_error_pages"]
+default = ["ipv4", "ipv6", "default_error_pages", "max_headers_16", "http_basic_auth", "global_http_basic_auth"]
 
 # Adds default error pages
 default_error_pages = []
+
+# Forces every page to authenticate
+global_http_basic_auth = ["http_basic_auth"]
+
+# Includes macros for HTTP basic auth
+http_basic_auth = ["dep:base64"]
+
+max_headers_16 = []
+max_headers_24 = []
+max_headers_32 = []
+max_headers_48 = []
+max_headers_64 = []
 
 defmt = ["dep:defmt", "heapless/defmt-03", "embassy-futures/defmt"]
 ipv4 = ["embassy-net/proto-ipv4"]

@@ -1,7 +1,6 @@
 use embassy_futures::select::select;
 use embassy_net::tcp::TcpReader;
 use embassy_time::Timer;
-use winnow::BStr;
 
 use crate::{error::Error, request::HttpRequest, utils};
 
