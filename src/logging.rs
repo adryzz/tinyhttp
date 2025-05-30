@@ -7,7 +7,6 @@ pub use defmt;
 pub use log;
 
 #[macro_export]
-#[macro_use]
 #[doc(hidden)]
 macro_rules! log {
     ($level:ident, $($args:tt)*) => {
