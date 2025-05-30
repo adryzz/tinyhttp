@@ -68,11 +68,15 @@ async fn http_task(stack: embassy_net::Stack<'static>) {
     // Then we can use it!
     let config = HttpConfig::default();
 
-    HttpServer::<1024, 1024, 2048>::new(stack, &config)
+    let mut tx_buf = [0u8; 1024];
+    let mut rx_buf = [0u8; 1024];
+    let mut http_buf = [0u8; 2048];
+
+    HttpServer::new(stack, &config)
         .route(router! {
             "/" => send_204,
         })
-        .run()
+        .run(&mut tx_buf, &mut rx_buf, &mut http_buf)
         .await;
 }
 

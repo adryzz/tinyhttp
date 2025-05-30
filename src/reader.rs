@@ -10,7 +10,6 @@ use crate::{error::Error, request::HttpRequest, utils};
 pub struct HttpReader<'a, 'b, 'c> {
     socket: &'a mut TcpReader<'b>,
     pub request: HttpRequest<'c>,
-    remaining_body_bytes: Option<&'c [u8]>
 }
 
 impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
@@ -57,19 +56,10 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
 
         let request = utils::parse(buf)?;
 
-        // check if the request body is fully contained in the RX buffer.
+        // TODO: check if the request body is fully contained in the RX buffer.
         // if it isn't, then let the body reader handle it.
 
-        if let Some(l) = request.body_len {
-            if let Some(b) = request.body_inline {
-                if l != b.len() {
-                    let a = request.body_inline;
-                    return Ok(Self { socket, request, remaining_body_bytes: a });
-                }
-            }
-        }
-
-        Ok(Self { socket, request, remaining_body_bytes: None })
+        Ok(Self { socket, request })
     }
 
     /// Returns a handle to read the full body streaming.

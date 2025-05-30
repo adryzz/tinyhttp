@@ -27,12 +27,12 @@ use writer::{HttpResponse, ResponseWriter};
 compile_error!("You must select at least one of the following features: 'ipv4', 'ipv6'");
 
 /// HTTP server without any routes associated with it
-pub struct HttpServer<'a, const TX: usize, const RX: usize, const HTTP: usize> {
+pub struct HttpServer<'a> {
     network_stack: embassy_net::Stack<'a>,
     config: &'a HttpConfig<'a>,
 }
 
-pub struct RoutableHttpServer<'a, F, const TX: usize, const RX: usize, const HTTP: usize>
+pub struct RoutableHttpServer<'a, F>
 where
     F: for<'c, 'd, 'e> AsyncFn(
         &'c HttpConfig<'d>,
@@ -45,7 +45,7 @@ where
     router: F,
 }
 
-impl<'a, const TX: usize, const RX: usize, const HTTP: usize> HttpServer<'a, TX, RX, HTTP> {
+impl<'a> HttpServer<'a> {
     pub fn new(network_stack: embassy_net::Stack<'static>, config: &'a HttpConfig) -> Self {
         Self {
             network_stack,
@@ -56,7 +56,7 @@ impl<'a, const TX: usize, const RX: usize, const HTTP: usize> HttpServer<'a, TX,
     /// Adds routing information to this [HttpServer]
     ///
     /// Use the [router!] macro to specify your routes
-    pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F, TX, RX, HTTP>
+    pub fn route<F>(self, f: F) -> RoutableHttpServer<'a, F>
     where
         F: for<'c, 'd, 'e> AsyncFn(
             &'c HttpConfig<'d>,
@@ -72,8 +72,8 @@ impl<'a, const TX: usize, const RX: usize, const HTTP: usize> HttpServer<'a, TX,
     }
 }
 
-impl<'a, F, const TX: usize, const RX: usize, const HTTP: usize>
-    RoutableHttpServer<'a, F, TX, RX, HTTP>
+impl<'a, F>
+    RoutableHttpServer<'a, F>
 where
     F: for<'c, 'd, 'e> AsyncFn(
         &'c HttpConfig<'d>,
@@ -81,12 +81,19 @@ where
         ResponseWriter<'c, 'd>,
     ) -> Result<HttpResponse, Error>,
 {
-    pub async fn run(&mut self) {
-        let mut tx_buf = [0u8; TX];
-        let mut rx_buf = [0u8; RX];
+
+    /// Runs the HTTP server.
+    /// Recommended buffer sizes:
+    /// 
+    /// `tx_buf` >=`1024`
+    /// 
+    /// `rx_buf` >=`1024`
+    /// 
+    /// `http_buf` >=`2048`
+    pub async fn run(&mut self, tx_buf: &mut [u8], rx_buf: &mut [u8], http_buf: &mut [u8]) {
 
         loop {
-            let mut socket = TcpSocket::new(self.network_stack, &mut rx_buf, &mut tx_buf);
+            let mut socket = TcpSocket::new(self.network_stack, rx_buf, tx_buf);
 
             // set the timeout to the configured value, or if none, set it to the default, and then handle closing the socket separately
             socket.set_timeout(Some(embassy_time::Duration::from_secs(
@@ -99,12 +106,11 @@ where
                 continue;
             }
 
-            let mut http_buf = [0u8; HTTP];
 
             loop {
                 let (mut reader, mut writer) = socket.split();
                 // wait for HTTP request
-                let reader = match HttpReader::try_new(&mut reader, &mut http_buf).await {
+                let reader = match HttpReader::try_new(&mut reader, http_buf).await {
                     Ok(r) => r,
                     Err(Error::Tcp(_)) => {
                         log!(error, "TCP error while parsing HTTP request.");
