@@ -1,5 +1,5 @@
 use core::str;
-use std::str::FromStr;
+use core::str::FromStr;
 
 #[cfg(any(feature = "max_headers_16", feature = "max_headers_24"))]
 use heapless::LinearMap;

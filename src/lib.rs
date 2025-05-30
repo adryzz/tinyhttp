@@ -1,4 +1,4 @@
-//#![no_std]
+#![no_std]
 #![feature(async_fn_traits)]
 #![feature(try_find)]
 pub mod config;
