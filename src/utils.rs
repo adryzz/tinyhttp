@@ -79,6 +79,18 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
 
     let mut next_section = &buf[idx + 1..];
 
+    // if there's no headers or body, early return
+    // TODO: see if 5 is the correct number
+    if next_section.len() < 5 {
+        return Ok(HttpRequest {
+            version,
+            method,
+            path: path,
+            headers,
+            body_len: None,
+        })
+    }
+
     // TODO: check if there's a \r\n (that would indicate the headers have an ending)
     // if not, return with a 413 Entity Too Large.
 
