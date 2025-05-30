@@ -156,7 +156,7 @@ impl<'a, 'b> HttpWriter<'a, 'b, Headers> {
     }
 
     pub async fn body_static_page(self, page: StaticPage<'a>) -> Result<HttpResponse, Error> {
-        self.body_str(&page.body, &page.content_type).await
+        self.body_str(page.body, page.content_type).await
     }
 
     pub async fn body_bytes(

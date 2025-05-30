@@ -78,7 +78,7 @@ impl From<StatusCode> for u16 {
 impl<'a> From<&'a StatusCode> for StatusCode {
     #[inline]
     fn from(t: &'a StatusCode) -> Self {
-        t.clone()
+        *t
     }
 }
 
@@ -320,10 +320,10 @@ impl TryFrom<u16> for StatusCode {
     type Error = InvalidStatusCode;
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
-        if value >= 100 && value < 1000 {
+        if (100..1000).contains(&value) {
             return Ok(StatusCode(NonZeroU16::new(value).ok_or(InvalidStatusCode)?));
         }
 
-        return Err(InvalidStatusCode);
+        Err(InvalidStatusCode)
     }
 }

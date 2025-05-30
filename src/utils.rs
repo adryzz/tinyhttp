@@ -28,10 +28,10 @@ impl USizeStrBuf {
         Self { buf: [0u8; 20] }
     }
 
-    pub fn stringify<'a>(&'a mut self, val: usize) -> &'a str {
+    pub fn stringify(&mut self, val: usize) -> &str {
         let utf8 = val.numtoa(10, &mut self.buf);
         // This never panics
-        str::from_utf8(&utf8).unwrap()
+        str::from_utf8(utf8).unwrap()
     }
 }
 
@@ -85,7 +85,7 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
         return Ok(HttpRequest {
             version,
             method,
-            path: path,
+            path,
             headers,
             body_len: None,
         })
@@ -126,10 +126,7 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
 
     // find content-length header
     let body_len = match headers.get(&headers::RequestHeader::ContentLength) {
-        Some(head) => match usize::from_str(head) {
-            Ok(v) => Some(v),
-            Err(_) => None,
-        },
+        Some(head) => usize::from_str(head).ok(),
         None => None,
     };
 
@@ -139,7 +136,7 @@ pub fn parse<'a>(buf: &'a [u8]) -> Result<HttpRequest<'a>, Error> {
     Ok(HttpRequest {
         version,
         method,
-        path: path,
+        path,
         headers,
         body_len,
     })
