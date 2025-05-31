@@ -14,8 +14,6 @@ use crate::request::HttpVersion;
 #[cfg(any(feature = "max_headers_16", feature = "max_headers_24"))]
 use heapless::LinearMap as Map;
 
-use crate::request::MAX_HEADER_COUNT;
-
 #[cfg(any(
     feature = "max_headers_32",
     feature = "max_headers_48",
