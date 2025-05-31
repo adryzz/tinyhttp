@@ -3,7 +3,7 @@
 use winnow::combinator::seq;
 use winnow::error::{ContextError, ErrMode};
 use winnow::prelude::*;
-use winnow::{ascii::line_ending, combinator::repeat, token::take_while};
+use winnow::{ascii::line_ending, token::take_while};
 
 use crate::error::Error;
 use crate::headers::HeaderName;
@@ -88,7 +88,7 @@ fn http_method<'s>(input: &mut Stream<'s>) -> ModalResult<HttpMethod> {
 
 fn http_path<'s>(input: &mut Stream<'s>) -> ModalResult<&'s str> {
     let buf = take_while(1.., is_not_space).parse_next(input)?;
-    Ok(str::from_utf8(buf).map_err(|_| ErrMode::Cut(ContextError::from_input(input)))?)
+    str::from_utf8(buf).map_err(|_| ErrMode::Cut(ContextError::from_input(input)))
 }
 
 fn http_version<'s>(input: &mut Stream<'s>) -> ModalResult<HttpVersion> {
@@ -122,7 +122,7 @@ fn header_value<'s>(input: &mut Stream<'s>) -> ModalResult<&'s str> {
     let data = take_while(1.., till_line_ending).parse_next(input)?;
     let _ = line_ending.parse_next(input)?;
 
-    Ok(str::from_utf8(data).map_err(|_| ErrMode::Cut(ContextError::from_input(input)))?)
+    str::from_utf8(data).map_err(|_| ErrMode::Cut(ContextError::from_input(input)))
 }
 
 #[rustfmt::skip]

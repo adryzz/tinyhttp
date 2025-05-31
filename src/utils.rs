@@ -1,8 +1,5 @@
 use core::str;
-use core::str::FromStr;
 
-#[cfg(any(feature = "max_headers_16", feature = "max_headers_24"))]
-use heapless::LinearMap;
 
 #[cfg(any(
     feature = "max_headers_32",
@@ -13,11 +10,6 @@ use heapless::FnvIndexMap;
 
 use numtoa::NumToA;
 
-use crate::{
-    error::Error,
-    headers,
-    request::{self, HttpRequest, HttpVersion},
-};
 
 pub struct USizeStrBuf {
     buf: [u8; 20],
