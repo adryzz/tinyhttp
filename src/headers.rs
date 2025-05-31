@@ -13,7 +13,7 @@ const DATE: UniCase<&str> = UniCase::ascii("Date");
 const RANGE: UniCase<&str> = UniCase::ascii("Range");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RequestHeader<'a> {
+pub enum HeaderName<'a> {
     Host,
     Accept,
     AcceptEncoding,
@@ -28,8 +28,8 @@ pub enum RequestHeader<'a> {
     Other(&'a str),
 }
 
-impl<'a> RequestHeader<'a> {
-    pub fn from_str(s: &'a str) -> RequestHeader<'a> {
+impl<'a> HeaderName<'a> {
+    pub fn from_str(s: &'a str) -> HeaderName<'a> {
         let case = UniCase::ascii(s);
 
         // TODO: improve this garbage

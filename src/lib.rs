@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(async_fn_traits)]
 #![feature(try_find)]
+#![feature(iterator_try_collect)]
 pub mod config;
 pub mod error;
 mod headers;
@@ -10,6 +11,9 @@ pub mod routing;
 pub mod status;
 mod utils;
 pub mod writer;
+
+// not meant to be public, just for testing
+pub mod parser;
 
 #[doc(hidden)]
 pub mod logging;
@@ -72,8 +76,7 @@ impl<'a> HttpServer<'a> {
     }
 }
 
-impl<'a, F>
-    RoutableHttpServer<'a, F>
+impl<'a, F> RoutableHttpServer<'a, F>
 where
     F: for<'c, 'd, 'e> AsyncFn(
         &'c HttpConfig<'d>,
@@ -81,17 +84,15 @@ where
         ResponseWriter<'c, 'd>,
     ) -> Result<HttpResponse, Error>,
 {
-
     /// Runs the HTTP server.
     /// Recommended buffer sizes:
-    /// 
+    ///
     /// `tx_buf` >=`1024`
-    /// 
+    ///
     /// `rx_buf` >=`1024`
-    /// 
+    ///
     /// `http_buf` >=`2048`
     pub async fn run(&mut self, tx_buf: &mut [u8], rx_buf: &mut [u8], http_buf: &mut [u8]) {
-
         loop {
             let mut socket = TcpSocket::new(self.network_stack, rx_buf, tx_buf);
 
@@ -105,7 +106,6 @@ where
 
                 continue;
             }
-
 
             loop {
                 let (mut reader, mut writer) = socket.split();

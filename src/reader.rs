@@ -2,7 +2,7 @@ use embassy_futures::select::select;
 use embassy_net::tcp::TcpReader;
 use embassy_time::Timer;
 
-use crate::{error::Error, request::HttpRequest, utils};
+use crate::{error::Error, parser, request::HttpRequest};
 
 /// Used to read HTTP requests.
 ///
@@ -54,7 +54,7 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
         }
         let buf = &buf[0..total];
 
-        let request = utils::parse(buf)?;
+        let request = parser::parse_request(buf)?;
 
         // TODO: check if the request body is fully contained in the RX buffer.
         // if it isn't, then let the body reader handle it.
@@ -62,20 +62,13 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
         Ok(Self { socket, request })
     }
 
+    /*
     /// Returns a handle to read the full body streaming.
     /// Returns [`None`] if there's no body or if the body is inline.
     /// For more information, see [`HttpRequest::body_inline`]
     pub fn body(self) -> Option<HttpBodyReader<'a, 'b>> {
-        if let Some(len) = self.request.body_len() {
-            if len != self.request.body_inline.unwrap().len() {
-                Some(HttpBodyReader::new(self.socket, len))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
+        Some(HttpBodyReader::new(self.socket, len))
+    }*/
 }
 
 pub type RequestReader<'a, 'b, 'c> = HttpReader<'a, 'b, 'c>;
