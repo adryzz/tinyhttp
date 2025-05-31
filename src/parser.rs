@@ -34,27 +34,36 @@ struct RequestLine<'a> {
 pub fn parse_request<'s>(mut buf: &'s [u8]) -> core::result::Result<HttpRequest<'s>, Error> {
     let input: &mut Stream<'s> = &mut buf;
 
-    request(input).map_err(|_| Error::BadRequest)
+    request(input).map_err(|_| Error::BadRequest)?
 }
 
-pub fn request<'s>(input: &mut Stream<'s>) -> ModalResult<HttpRequest<'s>> {
+pub fn request<'s>(input: &mut Stream<'s>) -> ModalResult<Result<HttpRequest<'s>, Error>> {
     let req = request_line(input)?;
 
-    let headers = core::iter::from_fn(|| match header.parse_next(input) {
+    let mut headers = Map::new();
+
+    let headers_iter = core::iter::from_fn(|| match header.parse_next(input) {
         Ok(o) => Some(Ok(o)),
         Err(ErrMode::Backtrack(_)) => None,
         Err(e) => Some(Err(e)),
-    })
-    .try_collect::<Map<_, _, MAX_HEADER_COUNT>>()?;
+    });
+
+    for n in headers_iter {
+        let n = n?;
+       match headers.insert(n.0, n.1) {
+            Err(_) => return Ok(Err(Error::EntityTooLarge)),
+            _ => {}
+       }
+    }
 
     let _ = line_ending.parse_next(input)?;
 
-    Ok(HttpRequest {
+    Ok(Ok(HttpRequest {
         version: req.version,
         method: req.method,
         path: req.path,
         headers,
-    })
+    }))
 }
 
 fn request_line<'s>(input: &mut Stream<'s>) -> ModalResult<RequestLine<'s>> {
