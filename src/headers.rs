@@ -12,7 +12,7 @@ const COOKIE: UniCase<&str> = UniCase::ascii("Cookie");
 const DATE: UniCase<&str> = UniCase::ascii("Date");
 const RANGE: UniCase<&str> = UniCase::ascii("Range");
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HeaderName<'a> {
     Host,
     Accept,

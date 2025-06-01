@@ -1,4 +1,5 @@
 use crate::headers::HeaderName;
+use cfg_if::cfg_if;
 
 /// Specifies the version of HTTP supported by the client.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -45,21 +46,27 @@ pub enum HttpMethod {
 )))]
 compile_error!("You must select the header limit with the corresponding feature flag!");
 
-/// Max number of headers parsed
-#[cfg(feature = "max_headers_16")]
+cfg_if! {
+if #[cfg(feature = "max_headers_16")] {
 pub(crate) const MAX_HEADER_COUNT: usize = 16;
-
-#[cfg(feature = "max_headers_24")]
+} else if #[cfg(feature = "max_headers_24")] {
 pub(crate) const MAX_HEADER_COUNT: usize = 24;
-
-#[cfg(feature = "max_headers_32")]
+} else if #[cfg(feature = "max_headers_32")] {
 pub(crate) const MAX_HEADER_COUNT: usize = 32;
-
-#[cfg(feature = "max_headers_48")]
+} else if #[cfg(feature = "max_headers_48")] {
 pub(crate) const MAX_HEADER_COUNT: usize = 48;
-
-#[cfg(feature = "max_headers_64")]
+} else {
 pub(crate) const MAX_HEADER_COUNT: usize = 64;
+}
+}
+
+cfg_if! {
+    if #[cfg(any(feature = "max_headers_32", feature = "max_headers_48", feature = "max_headers_64"))] {
+        pub(crate) type HeaderMap<'a> = heapless::FnvIndexMap<HeaderName<'a>, &'a str, MAX_HEADER_COUNT>;
+    } else {
+        pub(crate) type HeaderMap<'a> = heapless::LinearMap<HeaderName<'a>, &'a str, MAX_HEADER_COUNT>;
+    }
+}
 
 #[derive(Debug, Clone)]
 /// Represents a HTTP request made by a client.
@@ -79,15 +86,10 @@ pub struct HttpRequest<'a> {
     /// See [`HttpRequest::path()`].
     pub(crate) path: &'a str,
 
-    #[cfg(any(feature = "max_headers_16", feature = "max_headers_24"))]
-    pub(crate) headers: heapless::LinearMap<HeaderName<'a>, &'a str, MAX_HEADER_COUNT>,
-
-    #[cfg(any(
-        feature = "max_headers_32",
-        feature = "max_headers_48",
-        feature = "max_headers_64"
-    ))]
-    pub(crate) headers: heapless::FnvIndexMap<HeaderName<'a>, &'a str, MAX_HEADER_COUNT>,
+    /// The HTTP request headers.
+    ///
+    /// See [`HttpRequest::try_find_header()`].
+    pub(crate) headers: HeaderMap<'a>,
 }
 
 impl<'a> HttpRequest<'a> {

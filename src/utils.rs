@@ -1,15 +1,6 @@
 use core::str;
 
-
-#[cfg(any(
-    feature = "max_headers_32",
-    feature = "max_headers_48",
-    feature = "max_headers_64"
-))]
-use heapless::FnvIndexMap;
-
 use numtoa::NumToA;
-
 
 pub struct USizeStrBuf {
     buf: [u8; 20],

@@ -7,19 +7,9 @@ use winnow::{ascii::line_ending, token::take_while};
 
 use crate::error::Error;
 use crate::headers::HeaderName;
-use crate::request::HttpMethod;
 use crate::request::HttpRequest;
 use crate::request::HttpVersion;
-
-#[cfg(any(feature = "max_headers_16", feature = "max_headers_24"))]
-use heapless::LinearMap as Map;
-
-#[cfg(any(
-    feature = "max_headers_32",
-    feature = "max_headers_48",
-    feature = "max_headers_64"
-))]
-use heapless::FnvIndexMap as Map;
+use crate::request::{HeaderMap, HttpMethod};
 
 pub(crate) type Stream<'i> = &'i [u8];
 
@@ -38,7 +28,7 @@ pub fn parse_request<'s>(mut buf: &'s [u8]) -> core::result::Result<HttpRequest<
 pub fn request<'s>(input: &mut Stream<'s>) -> ModalResult<Result<HttpRequest<'s>, Error>> {
     let req = request_line(input)?;
 
-    let mut headers = Map::new();
+    let mut headers = HeaderMap::new();
 
     let headers_iter = core::iter::from_fn(|| match header.parse_next(input) {
         Ok(o) => Some(Ok(o)),
@@ -48,10 +38,10 @@ pub fn request<'s>(input: &mut Stream<'s>) -> ModalResult<Result<HttpRequest<'s>
 
     for n in headers_iter {
         let n = n?;
-       match headers.insert(n.0, n.1) {
+        match headers.insert(n.0, n.1) {
             Err(_) => return Ok(Err(Error::EntityTooLarge)),
             _ => {}
-       }
+        }
     }
 
     let _ = line_ending.parse_next(input)?;
