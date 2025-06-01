@@ -62,13 +62,14 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
         Ok(Self { socket, request })
     }
 
-    /*
     /// Returns a handle to read the full body streaming.
     /// Returns [`None`] if there's no body or if the body is inline.
     /// For more information, see [`HttpRequest::body_inline`]
     pub fn body(self) -> Option<HttpBodyReader<'a, 'b>> {
+        let str = self.request.try_find_header(&crate::headers::HeaderName::ContentLength)?;
+        let len = usize::from_str_radix(str, 10).ok()?;
         Some(HttpBodyReader::new(self.socket, len))
-    }*/
+    }
 }
 
 pub type RequestReader<'a, 'b, 'c> = HttpReader<'a, 'b, 'c>;
