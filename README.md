@@ -7,6 +7,9 @@ This crate intentionally does not implement HTTP/2 (or HTTP/3), or any TLS integ
 > [!NOTE]  
 > While this HTTP server implementation is under heavy development and working, it's NOT meant for production use yet, and its API surface is NOT stable.
 
+> [!NOTE]  
+> This crate _requires_ a nightly build of `rustc`, as a core part of its design depends on [`async_fn_trait`](https://doc.rust-lang.org/nightly/std/ops/trait.AsyncFn.html)
+
 ## Design goals
 - No standard library
 - No dynamic allocations
