@@ -1,7 +1,6 @@
 #![no_std]
 #![feature(async_fn_traits)]
-#![feature(try_find)]
-#![feature(iterator_try_collect)]
+
 pub mod config;
 pub mod error;
 mod headers;
