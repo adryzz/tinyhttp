@@ -38,10 +38,7 @@ pub fn request<'s>(input: &mut Stream<'s>) -> ModalResult<Result<HttpRequest<'s>
 
     for n in headers_iter {
         let n = n?;
-        match headers.insert(n.0, n.1) {
-            Err(_) => return Ok(Err(Error::EntityTooLarge)),
-            _ => {}
-        }
+        if headers.insert(n.0, n.1).is_err() { return Ok(Err(Error::EntityTooLarge)) }
     }
 
     let _ = line_ending.parse_next(input)?;

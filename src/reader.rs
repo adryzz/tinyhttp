@@ -67,7 +67,7 @@ impl<'a, 'b, 'c> HttpReader<'a, 'b, 'c> {
     /// For more information, see [`HttpRequest::body_inline`]
     pub fn body(self) -> Option<HttpBodyReader<'a, 'b>> {
         let str = self.request.try_find_header(&crate::headers::HeaderName::ContentLength)?;
-        let len = usize::from_str_radix(str, 10).ok()?;
+        let len = str::parse(str).ok()?;
         Some(HttpBodyReader::new(self.socket, len))
     }
 }
